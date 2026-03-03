@@ -171,14 +171,84 @@ button,input,select,textarea{font-family:'Poppins',sans-serif}
     </div>
     <button id="login-btn">Sign In</button>
     <div id="login-err"></div>
-    <div class="url-toggle"><button id="show-url-btn" onclick="var s=document.getElementById('url-section');s.style.display=s.style.display==='none'?'block':'none';if(s.style.display==='block'){var i=document.getElementById('url-inp');if(i)i.value=localStorage.getItem('aws_url')||'';}">⚙ Configure API URL</button></div>
+    <div class="url-toggle"><button id="show-url-btn">⚙ Configure API URL</button></div>
     <div id="url-section">
       <div style="font-size:11px;color:#7A92B0;margin-bottom:7px">Paste your Google Apps Script Web App URL:</div>
       <input type="text" id="url-inp" placeholder="https://script.google.com/macros/s/.../exec"/>
-      <button id="save-url-btn" onclick="var u=document.getElementById('url-inp').value.trim();if(!u||!u.startsWith('https://script.google.com')){document.getElementById('login-err').textContent='URL must start with https://script.google.com';document.getElementById('login-err').style.display='block';return;}localStorage.setItem('aws_url',u);document.getElementById('url-section').style.display='none';document.getElementById('login-err').style.display='none';alert('API URL saved! Now sign in.');">Save URL</button>
+      <button id="save-url-btn">Save URL</button>
     </div>
   </div>
 </div>
+<script>
+// ── SELF-CONTAINED LOGIN BOOTSTRAP ──────────────────────────────────────────
+// Runs immediately, independently of the main app script below.
+// Handles: Configure URL toggle, Save URL, and Sign In button.
+(function(){
+  function el(id){return document.getElementById(id);}
+
+  // Populate URL input from localStorage on load
+  var savedUrl=localStorage.getItem("aws_url")||"";
+  if(savedUrl&&el("url-inp")) el("url-inp").value=savedUrl;
+
+  // ⚙ Configure API URL toggle
+  el("show-url-btn").addEventListener("click",function(e){
+    e.preventDefault();
+    var sec=el("url-section");
+    var isHidden=sec.style.display===""||sec.style.display==="none";
+    sec.style.display=isHidden?"block":"none";
+    if(isHidden){
+      var inp=el("url-inp");
+      inp.value=localStorage.getItem("aws_url")||"";
+      inp.focus();
+    }
+  });
+
+  // Save URL button
+  el("save-url-btn").addEventListener("click",function(e){
+    e.preventDefault();
+    var url=(el("url-inp").value||"").trim();
+    if(!url){
+      showErr("Please paste your Apps Script URL.");return;
+    }
+    if(!url.startsWith("https://script.google.com")){
+      showErr("URL must start with https://script.google.com");return;
+    }
+    if(!url.endsWith("/exec")){
+      showErr("URL must end with /exec — copy the full Web App URL.");return;
+    }
+    localStorage.setItem("aws_url",url);
+    el("url-section").style.display="none";
+    showErr("");
+    // Flash the sign in button green briefly to confirm
+    var btn=el("login-btn");
+    btn.style.background="#1DBD6A";
+    btn.textContent="✓ URL Saved — Sign In";
+    setTimeout(function(){btn.style.background="";btn.textContent="Sign In";},2000);
+  });
+
+  // Sign In button — basic click to trigger doLogin when ready
+  el("login-btn").addEventListener("click",function(e){
+    e.preventDefault();
+    var url=localStorage.getItem("aws_url")||"";
+    if(!url){
+      showErr("First click '⚙ Configure API URL' and paste your Apps Script URL.");
+      el("url-section").style.display="block";
+      return;
+    }
+    // doLogin() is defined later in the main script — call it if available
+    if(typeof doLogin==="function"){doLogin();}
+    else{showErr("Page still loading — please wait a moment and try again.");}
+  });
+
+  function showErr(msg){
+    var e=el("login-err");
+    if(!e)return;
+    if(!msg){e.style.display="none";return;}
+    e.textContent=msg;e.style.display="block";
+  }
+})();
+</script>
+
 
 <div id="app">
   <div id="sb">
@@ -4640,7 +4710,8 @@ function doLogout(){
   toast("Signed out.","ok");
 }
 
-// Login form events
+// Login form events — url buttons handled by bootstrap script above
+document.getElementById("login-btn").removeEventListener("click",doLogin); // clear bootstrap handler
 document.getElementById("login-btn").addEventListener("click",doLogin);
 document.getElementById("login-pass").addEventListener("keydown",function(e){if(e.key==="Enter")doLogin();});
 document.getElementById("login-user").addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("login-pass").focus();});
