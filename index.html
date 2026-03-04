@@ -1023,6 +1023,37 @@ function sheetFetch(){
         if(Array.isArray(d.calendar)){
           _CAL=d.calendar.map(function(e){return Object.assign({},e,{id:e.id||("cal"+Date.now()+Math.random())});});
         }
+        // Assignment Tracker — assignments
+        if(Array.isArray(d.atAssignments)&&d.atAssignments.length){
+          atSave("assignments",d.atAssignments);
+        }
+        // Assignment Tracker — submissions
+        if(d.atSubmissions&&typeof d.atSubmissions==="object"&&!Array.isArray(d.atSubmissions)&&Object.keys(d.atSubmissions).length){
+          atSaveObj("submissions",d.atSubmissions);
+        }
+        // Assignment Tracker — assessments
+        if(Array.isArray(d.atAssessments)&&d.atAssessments.length){
+          atSave("assessments",d.atAssessments);
+        }
+        // Assignment Tracker — exact path
+        if(Array.isArray(d.atExactPath)&&d.atExactPath.length){
+          atSave("exactpath",d.atExactPath);
+        }
+        // Assignment Tracker — notes
+        if(Array.isArray(d.atNotes)&&d.atNotes.length){
+          atSave("notes",d.atNotes);
+        }
+        // Assignment Tracker — reports
+        if(Array.isArray(d.atReports)&&d.atReports.length){
+          atSave("reports",d.atReports);
+        }
+        // AWSC-27 Project Tracker
+        if(Array.isArray(d.ptAssignments)&&d.ptAssignments.length){
+          try{localStorage.setItem("aws_pt_assignments",JSON.stringify(d.ptAssignments));}catch(e){}
+        }
+        if(Array.isArray(d.ptEvaluations)&&d.ptEvaluations.length){
+          try{localStorage.setItem("aws_pt_evaluations",JSON.stringify(d.ptEvaluations));}catch(e){}
+        }
         saveLocal();setLive();return true;
       }return false;
     }).catch(function(e){clearTimeout(t);done=true;console.warn("SheetFetch error:",e);return false;});
@@ -5203,6 +5234,16 @@ if(_saveUrlBtn&&!_saveUrlBtn.dataset.bound){_saveUrlBtn.dataset.bound="1";_saveU
             saveLocal();
           }
           if(d.settings&&Object.keys(d.settings).length){SETT=Object.assign(defS(),d.settings);saveS(SETT);}
+          // Assignment Tracker data
+          if(Array.isArray(d.atAssignments)&&d.atAssignments.length){atSave("assignments",d.atAssignments);}
+          if(d.atSubmissions&&typeof d.atSubmissions==="object"&&!Array.isArray(d.atSubmissions)&&Object.keys(d.atSubmissions).length){atSaveObj("submissions",d.atSubmissions);}
+          if(Array.isArray(d.atAssessments)&&d.atAssessments.length){atSave("assessments",d.atAssessments);}
+          if(Array.isArray(d.atExactPath)&&d.atExactPath.length){atSave("exactpath",d.atExactPath);}
+          if(Array.isArray(d.atNotes)&&d.atNotes.length){atSave("notes",d.atNotes);}
+          if(Array.isArray(d.atReports)&&d.atReports.length){atSave("reports",d.atReports);}
+          // AWSC-27 Project Tracker
+          if(Array.isArray(d.ptAssignments)&&d.ptAssignments.length){try{localStorage.setItem("aws_pt_assignments",JSON.stringify(d.ptAssignments));}catch(e){}}
+          if(Array.isArray(d.ptEvaluations)&&d.ptEvaluations.length){try{localStorage.setItem("aws_pt_evaluations",JSON.stringify(d.ptEvaluations));}catch(e){}}
           setLive();launchApp();
         } else {
           // Token invalid — show login
@@ -9964,10 +10005,11 @@ function rATAssignments(c){
     h+='<div style="display:flex;flex-direction:column;gap:8px">';
     filtered.forEach(function(a,i){
       var realIdx=assigns.indexOf(a);
-      var submCount=enrolled.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Turned In";}).length;
-      var missCount=enrolled.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Missing";}).length;
-      var lateCount=enrolled.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Late";}).length;
-      var pct=enrolled.length?Math.round(submCount/enrolled.length*100):0;
+      var cohortStudents=a.cohort?enrolled.filter(function(s){return s.cohort===a.cohort;}):enrolled;
+      var submCount=cohortStudents.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Turned In";}).length;
+      var missCount=cohortStudents.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Missing";}).length;
+      var lateCount=cohortStudents.filter(function(s){var sub=subs[a.id+"_"+s.id];return sub&&sub.status==="Late";}).length;
+      var pct=cohortStudents.length?Math.round(submCount/cohortStudents.length*100):0;
       var typeCol={Homework:"#3B82F6",Classwork:"#8B5CF6",Quiz:"#EF4444",Assessment:"#D97706",Project:"#0891B2",Lab:"#059669",Worksheet:"#6366F1"}[a.type]||"#6B7280";
       var isOpen=selAssign===a.id;
 
@@ -9979,7 +10021,7 @@ function rATAssignments(c){
       h+='<span style="font-size:10px;color:#94A3B8;font-weight:600">'+esc(a.id)+'</span>';
       h+='<span style="font-size:13px;font-weight:800;color:#1A365E">'+esc(a.title)+'</span></div>';
       h+='<div style="display:flex;gap:14px;font-size:11px;color:#7A92B0;flex-wrap:wrap">';
-      h+='<span>📚 '+esc(a.subject)+'</span><span>🏫 '+esc(a.division)+'</span>';
+      h+='<span>📚 '+esc(a.subject)+'</span><span>🏫 '+esc(a.division)+'</span>'+(a.cohort?'<span style="background:#EDE9FE;color:#7C3AED;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px">👥 '+esc(a.cohort)+'</span>':'<span style="font-size:9px;color:#94A3B8">👥 All Students</span>');
       h+='<span>📅 Assigned: '+esc(a.dateAssigned)+'</span><span>⏰ Due: '+esc(a.dueDate)+'</span>';
       if(a.maxScore)h+='<span>🎯 Max: '+a.maxScore+'pts</span>';
       h+='</div></div>';
@@ -9993,10 +10035,16 @@ function rATAssignments(c){
 
       // Grade entry sub-panel
       if(isOpen){
+        var panelStudents=a.cohort?enrolled.filter(function(s){return s.cohort===a.cohort;}):enrolled;
         h+='<div style="margin-top:12px;border-top:1px solid #E4EAF2;padding-top:12px">';
-        h+='<div style="font-size:10px;font-weight:700;color:#7A92B0;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Student Submissions & Grades</div>';
+        h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+        h+='<div style="font-size:10px;font-weight:700;color:#7A92B0;text-transform:uppercase;letter-spacing:1px">Student Submissions & Grades</div>';
+        if(a.cohort)h+='<span style="font-size:9px;font-weight:700;background:#EDE9FE;color:#7C3AED;padding:2px 8px;border-radius:5px">👥 '+esc(a.cohort)+' · '+panelStudents.length+' students</span>';
+        else h+='<span style="font-size:9px;color:#94A3B8">All '+panelStudents.length+' enrolled students</span>';
+        h+='</div>';
+        if(!panelStudents.length)h+='<div style="padding:20px;text-align:center;color:#94A3B8;font-size:12px">No students in this cohort. <a href="#" onclick="nav(\"cohorts\");return false;" style="color:#7C3AED;font-weight:700">Assign students to cohort →</a></div>';
         h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px">';
-        enrolled.forEach(function(s){
+        panelStudents.forEach(function(s){
           var sub=subs[a.id+"_"+s.id]||{status:"Assigned",score:null};
           var gpa=a.maxScore&&sub.score!==null&&sub.score!==undefined?calcATGPA(sub.score,a.maxScore):null;
           var statCol={Assigned:"#94A3B8","Turned In":"#059669",Missing:"#D61F31",Late:"#D97706",Incomplete:"#6366F1",Resubmit:"#0891B2",Excused:"#6B7280"}[sub.status]||"#94A3B8";
@@ -10066,6 +10114,7 @@ function rATAssignments(c){
     b.addEventListener("click",function(){
       var aid=b.dataset.aid;
       var allSubs=getATSubmissions();
+      var aSaved=getATAssignments().find(function(x){return x.id===aid;})||{};
       c.querySelectorAll(".at-sub-status[data-aid='"+aid+"']").forEach(function(sel){
         var sid=sel.dataset.sid;
         var key=aid+"_"+sid;
@@ -10105,6 +10154,7 @@ function openATAssignModal(idx,c){
     +'<div class="fl"><label class="flb">Type</label><select class="fsel2" id="at-type">'+AT_TYPES.map(function(t){return'<option '+(a.type===t?"selected":"")+'>'+t+'</option>';}).join("")+'</select></div>'
     +'<div class="fl"><label class="flb">Subject</label><select class="fsel2" id="at-subj">'+AT_SUBJECTS.map(function(s){return'<option '+(a.subject===s?"selected":"")+'>'+s+'</option>';}).join("")+'</select></div>'
     +'<div class="fl"><label class="flb">Division</label><select class="fsel2" id="at-div">'+AT_DIVISIONS.map(function(d){return'<option '+(a.division===d?"selected":"")+'>'+d+'</option>';}).join("")+'</select></div>'
+    +'<div class="fl"><label class="flb">Cohort / Class <span style=\"color:#7A92B0;font-weight:400\">(optional — leave blank for all students)</span></label><select class="fsel2" id="at-cohort"><option value=\"\" '+((!a.cohort||a.cohort==="")?'selected':'')+'>— All Students —</option>'+(SETT.cohorts||[]).map(function(coh){return'<option value=\"'+esc(coh)+'\" '+(a.cohort===coh?'selected':'')+'>'+esc(coh)+'</option>';}).join("")+'</select></div>'
     +'<div class="fl"><label class="flb">Max Score</label><input class="fi" id="at-max" type="number" value="'+(a.maxScore||"")+'" placeholder="Leave blank = ungraded"/></div>'
     +'<div class="fl"><label class="flb">Date Assigned</label><input class="fi" id="at-dasgn" type="date" value="'+(a.dateAssigned||new Date().toISOString().slice(0,10))+'"/></div>'
     +'<div class="fl"><label class="flb">Due Date *</label><input class="fi" id="at-due" type="date" value="'+(a.dueDate||"")+'"/></div>'
@@ -10126,6 +10176,7 @@ function openATAssignModal(idx,c){
       type:document.getElementById("at-type").value,
       subject:document.getElementById("at-subj").value,
       division:document.getElementById("at-div").value,
+      cohort:document.getElementById("at-cohort").value,
       maxScore:parseFloat(document.getElementById("at-max").value)||null,
       dateAssigned:document.getElementById("at-dasgn").value,
       dueDate:due,
@@ -11160,14 +11211,30 @@ function ptSync(){
   gmsSheetRequest("savePTAssignments",{assignments:ptGA()},null);
   gmsSheetRequest("savePTEvaluations",{evaluations:ptGE()},null);
 }
+var _atSyncTimer=null;
 function atSync(){
   if(!webUrl)return;
-  gmsSheetRequest("saveATAssignments",{assignments:getATAssignments()},null);
-  gmsSheetRequest("saveATSubmissions",{submissions:getATSubmissions()},null);
-  gmsSheetRequest("saveATAssessments",{assessments:getATAssess()},null);
-  gmsSheetRequest("saveATExactPath",{exactpath:getATEP()},null);
-  gmsSheetRequest("saveATNotes",{notes:getATNotes()},null);
-  gmsSheetRequest("saveATReports",{reports:getATReports()},null);
+  // Debounce: wait 800ms after last call before syncing to avoid request storms
+  clearTimeout(_atSyncTimer);
+  _atSyncTimer=setTimeout(function(){
+    var pending=6,failed=0;
+    function done(ok){pending--;if(!ok)failed++;if(pending===0){if(failed>0)toast("Saved locally. Sheet sync failed ("+failed+" actions).","err");else toast("Assignment data synced to Sheets ✓","ok");}}
+    function req(action,payload){
+      var p=Object.assign({},payload,{token:_sessionToken});
+      var body=encodeURIComponent(JSON.stringify(p));
+      var c=new AbortController(),t=setTimeout(function(){c.abort();},12000);
+      fetch(webUrl+"?action="+action+"&payload="+body+"&token="+encodeURIComponent(_sessionToken),{signal:c.signal})
+        .then(function(r){clearTimeout(t);return r.json();})
+        .then(function(d){done(d.status==="ok");})
+        .catch(function(){done(false);});
+    }
+    req("saveATAssignments",{assignments:getATAssignments()});
+    req("saveATSubmissions",{submissions:getATSubmissions()});
+    req("saveATAssessments",{assessments:getATAssess()});
+    req("saveATExactPath",{exactpath:getATEP()});
+    req("saveATNotes",{notes:getATNotes()});
+    req("saveATReports",{reports:getATReports()});
+  },800);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
