@@ -266,7 +266,7 @@ document.addEventListener("DOMContentLoaded",function(){
     showErr("");
     var payload=encodeURIComponent(JSON.stringify({username:username,password:password}));
     var c=new AbortController(), t=setTimeout(function(){c.abort();},12000);
-    fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"login",username:username,password:password}),signal:c.signal,mode:"cors"})
+    fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"login",username:username,password:password}),signal:c.signal,mode:"cors"})
       .then(function(r){clearTimeout(t);return r.json();})
       .then(function(d){
         btn.disabled=false; btn.textContent="Sign In";
@@ -1063,7 +1063,7 @@ function sheetPush(student,action){
   var s=Object.assign({},student,{documents:(student.documents||[]).join("|")});
   var body=JSON.stringify({action:action,student:s,token:_sessionToken});
   var c=new AbortController(),t=setTimeout(function(){c.abort();},15000);
-  fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:body,signal:c.signal})
+  fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:body,signal:c.signal})
     .then(function(r){clearTimeout(t);return r.json();})
     .then(function(d){if(d.status==="ok")setLive();else if(d.message&&d.message.indexOf("Session")>=0)handleSessionExpired();})
     .catch(function(){toast("Saved locally. Sync failed.","err");});
@@ -1072,7 +1072,7 @@ function sheetDel(id){
   if(!webUrl)return;
   var body=JSON.stringify({action:"delete",id:String(id),token:_sessionToken});
   var c=new AbortController();setTimeout(function(){c.abort();},15000);
-  fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:body,signal:c.signal}).catch(function(){});
+  fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:body,signal:c.signal}).catch(function(){});
 }
 
 // ── GMS SYNC FUNCTIONS ────────────────────────────────────────
@@ -1085,7 +1085,7 @@ function gmsSheetRequest(action, payload, onOk) {
   var c = new AbortController(), t = setTimeout(function(){c.abort();}, 30000);
   fetch(webUrl, {
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{"Content-Type":"text/plain"},
     body:body,
     signal:c.signal
   })
@@ -4124,7 +4124,7 @@ function rUsers(c){
 
   // Load users from Sheets
   var token=encodeURIComponent(_sessionToken);
-  fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"getUsers",token:token}),mode:"cors"})
+  fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"getUsers",token:token}),mode:"cors"})
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.status!=="ok"){c.innerHTML='<div class="card" style="padding:24px;color:#D61F31">Error: '+esc(d.message)+'</div>';return;}
@@ -4168,7 +4168,7 @@ function rUsers(c){
           e.stopPropagation();
           if(!confirm("Remove user '"+b.dataset.username+"'? They will no longer be able to sign in."))return;
           var payload=encodeURIComponent(JSON.stringify({username:b.dataset.username,token:_sessionToken}));
-          fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteUser",username:b.dataset.username,token:_sessionToken}),mode:"cors"})
+          fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"deleteUser",username:b.dataset.username,token:_sessionToken}),mode:"cors"})
             .then(function(r){return r.json();})
             .then(function(d){if(d.status==="ok"){toast("User removed","ok");rUsers(c);}else toast(d.message||"Error","err");});
         });
@@ -4221,7 +4221,7 @@ function openUserModal(user,idx){
     if(!uData.username){toast("Username is required","err");return;}
     if(isNew&&!pass){toast("Password is required for new users","err");return;}
     var payload=encodeURIComponent(JSON.stringify({user:uData,token:_sessionToken}));
-    fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:"saveUser",token:_sessionToken},{user:uData})),mode:"cors"})
+    fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(Object.assign({action:"saveUser",token:_sessionToken},{user:uData})),mode:"cors"})
       .then(function(r){return r.json();})
       .then(function(d){
         if(d.status==="ok"){toast((isNew?"User added":"Changes saved")+" ✓","ok");ov.remove();rUsers(document.getElementById("content"));}
@@ -5158,7 +5158,7 @@ function doLogin(){
   btn.disabled=true;btn.textContent="Signing in...";err.style.display="none";
   var payload=encodeURIComponent(JSON.stringify({username:username,password:password}));
   var c=new AbortController(),t=setTimeout(function(){c.abort();},12000);
-  fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"login",username:username,password:password}),signal:c.signal,mode:"cors"})
+  fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action:"login",username:username,password:password}),signal:c.signal,mode:"cors"})
     .then(function(r){clearTimeout(t);return r.json();})
     .then(function(d){
       btn.disabled=false;btn.textContent="Sign In";
@@ -11230,7 +11230,7 @@ function atSync(){
     function req(action,payload){
       payload.action=action;payload.token=_sessionToken;
       var c=new AbortController(),t=setTimeout(function(){c.abort();},30000);
-      fetch(webUrl,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:c.signal})
+      fetch(webUrl,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload),signal:c.signal})
         .then(function(r){clearTimeout(t);return r.json();})
         .then(function(d){done(d.status==="ok");})
         .catch(function(){done(false);});
